@@ -1,0 +1,57 @@
+name: Build and Push Add-on Image
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  pull_request:
+
+jobs:
+  build-push:
+    name: Build & Push Add-on
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        addon: ['direktive-addon']
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.addon }}
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}} # Uses Git tags like v1.2.3
+            type=semver,pattern={{major}}.{{minor}} # Creates tags like v1.2
+            type=sha # Creates tag based on commit SHA
+
+      - name: Build and push Add-on
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.addon }} 
+          file: ./${{ matrix.addon }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max 

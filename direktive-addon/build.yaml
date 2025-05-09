@@ -1,0 +1,11 @@
+build_from:
+  aarch64: "ghcr.io/home-assistant/aarch64-base:latest"
+  amd64: "ghcr.io/home-assistant/amd64-base:latest"
+labels:
+  io.hass.type: "addon"
+  io.hass.version: "{version}"
+  io.hass.arch: "{arch}"
+  io.hass.name: "My Vision AI"
+  io.hass.description: "Custom vision detection using specialized models and Frigate."
+args:
+  MY_ADDON_ARCH: "{arch}" 
